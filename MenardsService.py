@@ -1,5 +1,6 @@
 from selenium import webdriver
 from bs4 import BeautifulSoup
+import string
 import re
 import pandas as pd
 from MenardsEntity import *
@@ -31,8 +32,10 @@ pageDataFrame = pd.DataFrame()
 dataList = []
 
 # Finding last breadcrumb link on page to make category name
-lastBreadCrumb = soup_level1.find_all('div', class_='fontSegoeUI')[-1].text
-category = str(lastBreadCrumb).replace(" ", "-").strip()
+
+#lastBreadCrumb = soup_level1.find_all('div', class_='fontSegoeUI')[-1].text
+#category = str(lastBreadCrumb).replace(" ", "-").strip()
+category = str('patioFurniture')
 
 
 # Storing the path of the current directory for working file into var path
@@ -41,33 +44,81 @@ path = os.path.dirname(os.path.abspath(__file__))
 # Changing to the directory for the working file
 os.chdir(path)
 
-# Creating a folder named 'Menards modelsku'
+# Creating a folder named 'Menardsimages'
 os.mkdir('Menardsimages')
 
 # Changing to the directory for the working file
 os.chdir(path)
 
 # Find next button href for clicking to next page
-# nextButton = driver.find_element_by_xpath('//*[@title="Next"]')
+
+nextButton = driver.find_element_by_xpath('//*[@title="Next Page"]')
 
 # Click the next button
 # nextButton.click()
 
-# Beautiful Soup finds all pod-inner class tags on the Home Depot page and the loop begins
+# Beautiful Soup finds all pod-inner class tags on Menards page and the loop begins
 for podInner in soup_level2:
+
+    # Find img tag where src contains '.jpg' for image url
+
+    imageInfo = podInner.find('img', src=re.compile("(.*).jpg"))['src']
+    imageInfo = 'http:' + imageInfo
+
+    print(imageInfo)
 
     # Find div tag where class is 'ps-item-sku' for sku#/item num
     itemskuInfo = podInner.find('div', class_='ps-item-sku')
+    #itemskuInfo = string.split(itemskuInfo, " ")[-1]
+    #itemskuInfo = str(itemskuInfo.text).split() //took spaces out and put in array
+    itemskuInfo = str(itemskuInfo.text).strip('\n').strip('\t').rstrip('\n').strip('Sku ').strip('#:').lstrip()
+    #itemskuInfo = map(int, re.findall(r'\d+', itemskuInfo))
+    #itemskuInfo = int(re.search(r'\d+', itemskuInfo).group())
+    #[int(x.group()) for x in re.finditer(r'\d+', itemskuInfo)]
+    #su = ''.join(x for x in itemskuInfo if x.isdigit())
+   # itemskuInfo = " ".join(itemskuInfo.split())
+   # itemskuInfo = "".join(line.strip() for line in itemskuInfo.split("\n"))
+    #print int(filter(str.isdigit, itemskuInfo))
+    print('sku#' + itemskuInfo)
 
-    #print(itemskuInfo)
+    # Extracting sku number from itemsku num
 
-    # Find div tag where class is 'ps-item-sku' for sku#/item num
+    #skuNumber = str(itemskuInfo.text).strip().split(" ")[1].strip()
+
+    skuNumber = str(itemskuInfo)
+
+    # Concatenating category and skuNumber to create the folder name for searched item images
+    folderName = category + "-" + skuNumber
+
+    # Creating the filename for the jpg image files
+    fileName = str(imageInfo.split('/')[-1])
+
+    # Changing directory to the Images folder
+    os.chdir('Menardsimages')
+
+    # Making the folder based on folderName
+    os.mkdir(folderName)
+
+    # Changing current directory to Images folder
+    os.chdir(folderName)
+
+    # Sending request to download image and store with proper filename
+    request.urlretrieve(imageInfo, fileName)
+
+
+    # Resetting current directory to parent directory of Images folder
+    os.chdir(path)
+
+    # Find div tag where class is 'ps-item_title' for item
     titleInfo = podInner.find('div', class_='ps-item-title')
+    #print object  title and accompanying info
 
-    #print(titleInfo)
+    # Find div tag where class is 'price__numbers' for pricing information
+    priceInfo = podInner.find('span', class_='priceInfo')
+    print(priceInfo)
 
     # Pass item specific attributes to MenardsEntity constructor
-    entity = MenardsEntity(itemskuInfo, titleInfo)
+    entity = MenardsEntity(itemskuInfo, titleInfo, priceInfo, imageInfo)
 
     # Convert entity fields to a dictionary for DataFrame conversion
     entityDict = vars(entity)
