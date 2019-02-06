@@ -15,15 +15,16 @@ class MenardsEntity(object):
 
     def checkFields(self):
 
-        # Check image src for NoneType
-        if (self.image == None):
-                self.image = str(self.image)
 
         # Check model for NoneType, if NoneType then convert to String "None"
         if (self.modelsku == None):
             self.modelsku = str(self.modelsku)
         else:
             self.modelsku = self.modelsku.strip()
+
+        # Check image src for NoneType
+        if (self.image == None):
+            self.image = str(self.image)
 
             # Check description for NoneType, if NoneType then convert to String "None"
         if (self.titleInfo == None):
@@ -35,8 +36,8 @@ class MenardsEntity(object):
         if (self.price == None):
             self.price = str(self.price)
         else:
-            self.price = self.price.strip()
+            self.price = self.price.text.strip()
 
     def toString(self):
-                print(" Image: ", self.image, "\n", "Modelsku: ", self.modelsku, "\n", "titleInfo: ", self.titleInfo,
+                print("Modelsku: ", self.modelsku, "\n", " Image: ", self.image, "\n", "titleInfo: ", self.titleInfo,
                       "\n", "Price: ", self.price, "\n")

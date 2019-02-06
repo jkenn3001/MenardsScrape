@@ -1,8 +1,8 @@
 from selenium import webdriver
 from bs4 import BeautifulSoup
-import string
 import re
 import pandas as pd
+from selenium.webdriver.remote.webelement import WebElement
 from MenardsEntity import *
 from urllib import request
 import os
@@ -33,8 +33,8 @@ dataList = []
 
 # Finding last breadcrumb link on page to make category name
 
-#lastBreadCrumb = soup_level1.find_all('div', class_='fontSegoeUI')[-1].text
-#category = str(lastBreadCrumb).replace(" ", "-").strip()
+# lastBreadCrumb = soup_level1.find_all('div', class_='fontSegoeUI')[-1].text
+# category = str(lastBreadCrumb).replace(" ", "-").strip()
 category = str('patioFurniture')
 
 
@@ -52,7 +52,7 @@ os.chdir(path)
 
 # Find next button href for clicking to next page
 
-nextButton = driver.find_element_by_xpath('//*[@title="Next Page"]')
+nextButton: WebElement = driver.find_element_by_xpath('//*[@title="Next Page"]')
 
 # Click the next button
 # nextButton.click()
@@ -60,30 +60,43 @@ nextButton = driver.find_element_by_xpath('//*[@title="Next Page"]')
 # Beautiful Soup finds all pod-inner class tags on Menards page and the loop begins
 for podInner in soup_level2:
 
-    # Find img tag where src contains '.jpg' for image url
-
-    imageInfo = podInner.find('img', src=re.compile("(.*).jpg"))['src']
-    imageInfo = 'http:' + imageInfo
-
-    print(imageInfo)
-
     # Find div tag where class is 'ps-item-sku' for sku#/item num
-    itemskuInfo = podInner.find('div', class_='ps-item-sku')
-    #itemskuInfo = string.split(itemskuInfo, " ")[-1]
-    #itemskuInfo = str(itemskuInfo.text).split() //took spaces out and put in array
-    itemskuInfo = str(itemskuInfo.text).strip('\n').strip('\t').rstrip('\n').strip('Sku ').strip('#:').lstrip()
-    #itemskuInfo = map(int, re.findall(r'\d+', itemskuInfo))
-    #itemskuInfo = int(re.search(r'\d+', itemskuInfo).group())
-    #[int(x.group()) for x in re.finditer(r'\d+', itemskuInfo)]
-    #su = ''.join(x for x in itemskuInfo if x.isdigit())
-   # itemskuInfo = " ".join(itemskuInfo.split())
-   # itemskuInfo = "".join(line.strip() for line in itemskuInfo.split("\n"))
-    #print int(filter(str.isdigit, itemskuInfo))
-    print('sku#' + itemskuInfo)
+    # itemskuInfo = podInner.find('div', class_='ps-item-sku')
+    if podInner.find('div', class_='ps-item-sku') is not None:
+        itemskuInfo = podInner.find("div", class_='ps-item-sku')
+        itemskuInfo = str(itemskuInfo.text).strip('\n').strip('\t').rstrip('\n').strip('Sku ').strip('#:').lstrip()
+    elif podInner.find('div', class_='ps-item-sku') is not None:
+        itemskuInfo = podInner.find("div", class_='ps-item-sku')
+        itemskuInfo = str(itemskuInfo.text).strip('\n').strip('\t').rstrip('\n').strip('Model ').strip('#:').lstrip()
+
+    # itemskuInfo = string.split(itemskuInfo, " ")[-1]
+    # itemskuInfo = str(itemskuInfo.text).split() //took spaces out and put in array
+    # itemskuInfo = map(int, re.findall(r'\d+', itemskuInfo))
+    # itemskuInfo = int(re.search(r'\d+', itemskuInfo).group())
+    # [int(x.group()) for x in re.finditer(r'\d+', itemskuInfo)]
+    # su = ''.join(x for x in itemskuInfo if x.isdigit())
+    # itemskuInfo = " ".join(itemskuInfo.split())
+    # itemskuInfo = "".join(line.strip() for line in itemskuInfo.split("\n"))
+    # print int(filter(str.isdigit, itemskuInfo))
+    # print('sku#' + itemskuInfo)
 
     # Extracting sku number from itemsku num
 
-    #skuNumber = str(itemskuInfo.text).strip().split(" ")[1].strip()
+    # skuNumber = str(itemskuInfo.text).strip().split(" ")[1].strip()
+
+    # Find img tag where src contains '.jpg' for image url
+    if podInner.find('img', src=re.compile("(.*).jpg")) is not None:
+        imageInfo = podInner.find('img', src=re.compile("(.*).jpg"))['src']
+        imageInfo = 'http:' + imageInfo
+    elif podInner.find('img', href=re.compile("(.*).jpg")) is not None:
+        imageInfo = podInner.find('img', href=re.compile("(.*).jpg"))['href']
+        imageInfo = 'http:' + imageInfo
+        # imageInfo = podInner.find('img', src=re.compile("(.*).jpg"))['src']
+        # imageInfo = 'http:' + imageInfo
+
+        # print(imageInfo)
+
+    # Find div tag where class is
 
     skuNumber = str(itemskuInfo)
 
@@ -105,20 +118,20 @@ for podInner in soup_level2:
     # Sending request to download image and store with proper filename
     request.urlretrieve(imageInfo, fileName)
 
-
     # Resetting current directory to parent directory of Images folder
     os.chdir(path)
 
     # Find div tag where class is 'ps-item_title' for item
     titleInfo = podInner.find('div', class_='ps-item-title')
-    #print object  title and accompanying info
 
+    # print object  title and accompanying info
     # Find div tag where class is 'price__numbers' for pricing information
     priceInfo = podInner.find('span', class_='priceInfo')
-    print(priceInfo)
+    # print(priceInfo)
 
     # Pass item specific attributes to MenardsEntity constructor
-    entity = MenardsEntity(itemskuInfo, titleInfo, priceInfo, imageInfo)
+    entity = MenardsEntity(imageInfo, itemskuInfo, titleInfo, priceInfo, )
+
 
     # Convert entity fields to a dictionary for DataFrame conversion
     entityDict = vars(entity)
